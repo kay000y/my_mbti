@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBTI로 포켓몬 찾기</title>
+    <style>
+        /* 기본 리셋 및 폰트 설정 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-color: #FFFDF0;
+            --card-bg: #FFFFFF;
+            --primary-yellow: #FFD23F;
+            --primary-orange: #FF9F1C;
+            --accent-soft: #FFF3C4;
+            --text-main: #4A3E3D;
+            --text-sub: #7A6B6B;
+            --border-color: #FFE699;
+            --shadow: 0 10px 25px rgba(230, 180, 50, 0.15);
+            --shadow-hover: 0 14px 30px rgba(230, 180, 50, 0.25);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 16px;
+            line-height: 1.6;
+        }
+
+        /* 메인 컨테이너 */
+        .container {
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        /* 헤더 스타일 */
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .main-title {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            word-break: keep-all;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-sub);
+            font-weight: 500;
+            word-break: keep-all;
+        }
+
+        /* 화면 전환 처리 */
+        .screen {
+            display: none;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .screen.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 카드 공통 스타일 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 28px 24px;
+            box-shadow: var(--shadow);
+            border: 3px solid var(--border-color);
+        }
+
+        /* MBTI 그리드 레이아웃 */
+        .mbti-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .mbti-btn {
+            background-color: #FFFDF5;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        .mbti-btn:hover {
+            transform: translateY(-4px);
+            background-color: var(--accent-soft);
+            border-color: var(--primary-yellow);
+            box-shadow: 0 8px 15px rgba(255, 210, 63, 0.3);
+        }
+
+        .mbti-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .mbti-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #3A302F;
+            letter-spacing: 0.5px;
+        }
+
+        .mbti-desc {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        /* 결과 화면 스타일 */
+        .result-card {
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: var(--accent-soft);
+            color: #B36B00;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .pokemon-emoji {
+            font-size: 6.5rem;
+            line-height: 1.1;
+            margin: 10px 0 16px 0;
+            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.08));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .pokemon-name {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 16px;
+        }
+
+        .reason-box {
+            background-color: #FFFDF5;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: left;
+            margin-bottom: 24px;
+            border: 1.5px solid var(--border-color);
+            font-size: 1.05rem;
+            color: #4A3E3D;
+            word-break: keep-all;
+            line-height: 1.7;
+        }
+
+        .chemistry-box {
+            background-color: #FFF9E6;
+            border-radius: 16px;
+            padding: 18px 20px;
+            text-align: left;
+            margin-bottom: 28px;
+            border: 2px dashed #FFD23F;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .chemistry-emoji {
+            font-size: 2.8rem;
+            flex-shrink: 0;
+        }
+
+        .chemistry-info h4 {
+            font-size: 1.05rem;
+            color: #8A5200;
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .chemistry-info p {
+            font-size: 0.95rem;
+            color: #5C4D4C;
+            word-break: keep-all;
+        }
+
+        /* 버튼 스타일 */
+        .btn-restart {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-yellow) 0%, var(--primary-orange) 100%);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 16px;
+            padding: 16px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 159, 28, 0.35);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-restart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 159, 28, 0.45);
+        }
+
+        .btn-restart:active {
+            transform: translateY(0);
+        }
+
+        /* 반응형 모바일 대응 */
+        @media (max-width: 520px) {
+            .mbti-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .main-title {
+                font-size: 1.75rem;
+            }
+
+            .subtitle {
+                font-size: 0.95rem;
+            }
+
+            .card {
+                padding: 20px 16px;
+            }
+
+            .pokemon-emoji {
+                font-size: 5.2rem;
+            }
+
+            .pokemon-name {
+                font-size: 1.8rem;
+            }
+
+            .chemistry-box {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .chemistry-emoji {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 헤더 -->
+        <header>
+            <h1 class="main-title"><span>⚡</span> MBTI로 포켓몬 찾기 <span>🐾</span></h1>
+            <p class="subtitle">나의 성격 유형을 누르면 나와 꼭 닮은 포켓몬을 만나볼 수 있어요!</p>
+        </header>
+
+        <!-- 화면 1: MBTI 선택 화면 -->
+        <main id="selection-screen" class="screen active">
+            <div class="card">
+                <div class="mbti-grid" id="mbti-grid">
+                    <!-- JavaScript에서 16개 버튼을 동적으로 생성합니다 -->
+                </div>
+            </div>
+        </main>
+
+        <!-- 화면 2: 결과 화면 -->
+        <main id="result-screen" class="screen">
+            <div class="card result-card">
+                <div class="badge" id="result-badge">INFP - 내향형 상상가</div>
+                <div class="pokemon-emoji" id="pokemon-emoji">🌸</div>
+                <h2 class="pokemon-name" id="pokemon-name">푸린</h2>
+                
+                <div class="reason-box">
+                    <strong>💡 어울리는 이유</strong>
+                    <p id="pokemon-reason" style="margin-top: 6px;">
+                        감수성이 풍부하고 상상력이 넘치는 마음 따뜻한 포켓몬입니다. 타인의 감정에 깊이 공감하며 자신만의 감성 세계를 아름답게 표현할 줄 압니다.
+                    </p>
+                </div>
+
+                <div class="chemistry-box">
+                    <div class="chemistry-emoji" id="chem-emoji">🐉</div>
+                    <div class="chemistry-info">
+                        <h4>❤️ 환상의 짝꿍 (궁합)</h4>
+                        <p id="chem-text"><strong>ENFJ (망나뇽)</strong> : 다정하고 포용력 넓은 망나뇽이 푸린의 섬세한 감정을 따뜻하게 안아주고 이끌어줍니다.</p>
+                    </div>
+                </div>
+
+                <button class="btn-restart" id="btn-restart" onclick="resetToSelection()">
+                    <span>🔄</span> 다시 고르기
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 16가지 MBTI 및 대응 포켓몬 데이터
+        const mbtiData = {
+            "INFP": {
+                name: "푸린",
+                emoji: "🎤",
+                desc: "열정적인 중재자",
+                reason: "감수성이 풍부하고 풍부한 상상력을 지닌 푸린은 INFP와 꼭 닮았습니다. 노래로 사람들의 마음을 움직이려 하는 진심과 다정한 마음씨가 매력적인 포켓몬입니다.",
+                chemistry: {
+                    mbti: "ENFJ",
+                    pokemon: "망나뇽",
+                    emoji: "🐉",
+                    reason: "따뜻하고 포용력 있는 망나뇽이 INFP의 깊은 감정과 풍부한 꿈을 다정하게 지지해 줍니다."
+                }
+            },
+            "INTJ": {
+                name: "뮤츠",
+                emoji: "🔮",
+                desc: "용의주도한 전략가",
+                reason: "뛰어난 지혜와 치밀한 전략적 사고를 지닌 뮤츠는 INTJ의 모습 그대로입니다. 독립심이 강하며 목적을 달성하기 위해 냉철하고 끊임없이 정진하는 포켓몬입니다.",
+                chemistry: {
+                    mbti: "ENFP",
+                    pokemon: "이브이",
+                    emoji: "🦊",
+                    reason: "통통 튀는 무한한 가능성을 지닌 이브이가 뮤츠의 신중하고 신비로운 세계에 새로운 즐거움을 선물합니다."
+                }
+            },
+            "ENFP": {
+                name: "이브이",
+                emoji: "🦊",
+                desc: "재발랄한 활동가",
+                reason: "무궁무진한 가능성과 넘치는 에너지를 가진 이브이는 ENFP 그 자체입니다. 어디로 튈지 모르는 창의성과 호기심으로 언제나 주위에 밝은 활력을 불어넣습니다.",
+                chemistry: {
+                    mbti: "INTJ",
+                    pokemon: "뮤츠",
+                    emoji: "🔮",
+                    reason: "깊이 있는 생각을 가진 뮤츠가 ENFP의 번뜩이는 아이디어를 현실로 단단하게 잡아줍니다."
+                }
+            },
+            "ESTJ": {
+                name: "거북왕",
+                emoji: "🐢",
+                desc: "엄격한 관리자",
+                reason: "체계적이고 리더십이 강한 거북왕은 ESTJ의 든든함을 대변합니다. 강한 책임감과 신뢰받는 리더십으로 팀을 안전하고 확실하게 이끄는 베테랑 포켓몬입니다.",
+                chemistry: {
+                    mbti: "ISFP",
+                    pokemon: "메타몽",
+                    emoji: "🫠",
+                    reason: "유연하고 온화한 메타몽이 ESTJ의 철두철미함 속에서 완충제 역할을 해주며 원만한 균형을 이룹니다."
+                }
+            },
+            "ENTP": {
+                name: "팬텀",
+                emoji: "👻",
+                desc: "뜨거운 논쟁을 즐기는 변론가",
+                reason: "재치 넘치고 아이디어가 끊이지 않는 팬텀은 ENTP와 완벽히 어울립니다. 고정관념을 깨는 장난기 어린 창의력과 위트 있는 도전 정신을 갖고 있습니다.",
+                chemistry: {
+                    mbti: "INFJ",
+                    pokemon: "루기아",
+                    emoji: "🌊",
+                    reason: "차분하고 깊은 통찰력을 가진 루기아가 ENTP의 통발 같은 창의력을 흥미롭게 지켜봐 줍니다."
+                }
+            },
+            "INFJ": {
+                name: "루기아",
+                emoji: "🌊",
+                desc: "선의의 옹호자",
+                reason: "고요하지만 깊은 내면의 힘과 통찰력을 지닌 루기아는 INFJ의 분위기를 풍깁니다. 세상의 평화를 바라며 타인을 배려하는 이상주의적 조화로움을 갖추었습니다.",
+                chemistry: {
+                    mbti: "ENTP",
+                    pokemon: "팬텀",
+                    emoji: "👻",
+                    reason: "재기발랄하고 통쾌한 팬텀이 INFJ의 고민 많은 내면을 가볍고 즐겁게 환기해 줍니다."
+                }
+            },
+            "ESFP": {
+                name: "피카츄",
+                emoji: "⚡",
+                desc: "자유로운 영혼의 연예인",
+                reason: "어디서나 분위기 메이커 역할을 담당하는 피카츄는 ESFP의 밝은 에너지입니다. 순간의 즐거움을 사랑하고 주위 사람들에게 신나는 기운을 선물합니다.",
+                chemistry: {
+                    mbti: "ISTJ",
+                    pokemon: "아머까오",
+                    emoji: "🦅",
+                    reason: "묵묵하고 단단한 아머까오가 통통 튀는 피카츄가 안심하고 뛰어놀 수 있는 든든한 안식처가 됩니다."
+                }
+            },
+            "ISFJ": {
+                name: "해피너스",
+                emoji: "🥚",
+                desc: "용감한 수호자",
+                reason: "상대방을 정성껏 보살피고 헌신하는 해피너스는 ISFJ의 온화함 그 자체입니다. 섬세한 주의력과 다정한 마음으로 모두의 상처와 피로를 진심으로 치유해 줍니다.",
+                chemistry: {
+                    mbti: "ESTP",
+                    pokemon: "윈디",
+                    emoji: "🦁",
+                    reason: "용감하고 행동력 있는 윈디가 수줍음 많은 해피너스를 언제나 앞장서서 세심하게 보호해 줍니다."
+                }
+            },
+            "ISTJ": {
+                name: "아머까오",
+                emoji: "🦅",
+                desc: "청렴결백한 논리주의자",
+                reason: "자기 맡은 바 임무를 묵묵히 다 완수하는 아머까오는 ISTJ의 신뢰감을 나타냅니다. 질서와 규율을 중요시하며 약속을 철저히 지키는 단단한 바위 같은 존재입니다.",
+                chemistry: {
+                    mbti: "ESFP",
+                    pokemon: "피카츄",
+                    emoji: "⚡",
+                    reason: "밝고 활기찬 피카츄가 신중하고 진중한 아머까오의 일상에 즐거운 웃음을 가득 더해줍니다."
+                }
+            },
+            "ENTJ": {
+                name: "리자몽",
+                emoji: "🔥",
+                desc: "대담한 지도자",
+                reason: "당당한 리더십과 강한 추진력을 지닌 리자몽은 ENTJ의 카리스마를 보여줍니다. 명확한 목표를 향해 당차게 비상하며 모두를 이끄는 불꽃 같은 열정이 있습니다.",
+                chemistry: {
+                    mbti: "INTP",
+                    pokemon: "후딘",
+                    emoji: "🧠",
+                    reason: "명석한 지혜를 가진 후딘이 리자몽의 뜨거운 열정에 완벽한 명약과 브레인 역할을 해줍니다."
+                }
+            },
+            "ESFJ": {
+                name: "토게피",
+                emoji: "🐣",
+                desc: "사교적인 외교관",
+                reason: "주변 사람들에게 행복과 온기를 주는 토게피는 ESFJ의 상냥함과 맞닿아 있습니다. 친화력이 뛰어나며 함께하는 이들의 친목과 조화를 소중히 여깁니다.",
+                chemistry: {
+                    mbti: "ISFP",
+                    pokemon: "고라파덕",
+                    emoji: "🦆",
+                    reason: "순수하고 무해한 고라파덕과 ESFJ 토게피의 다정한 케미가 서로에게 큰 편안함을 줍니다."
+                }
+            },
+            "ENFJ": {
+                name: "망나뇽",
+                emoji: "🐉",
+                desc: "정의로운 선도자",
+                reason: "바다에 빠진 사람을 구하는 따뜻한 영웅 망나뇽은 ENFJ의 인류애를 떠올리게 합니다. 선한 영향력으로 타인의 성장을 돕고 사람들을 다정하게 포용합니다.",
+                chemistry: {
+                    mbti: "INFP",
+                    pokemon: "푸린",
+                    emoji: "🎤",
+                    reason: "순수한 이상을 품은 INFP 푸린을 망나뇽이 가슴 깊이 공감하고 아껴주며 단짝이 됩니다."
+                }
+            },
+            "ISFP": {
+                name: "메타몽",
+                emoji: "🫠",
+                desc: "호기심 많은 예술가",
+                reason: "유연하고 어떠한 모습으로도 맞추어 변신할 수 있는 메타몽은 ISFP의 오픈마인드를 보여줍니다. 온화하고 자유로운 영혼으로 묵묵히 자신만의 예술성을 표현합니다.",
+                chemistry: {
+                    mbti: "ESTJ",
+                    pokemon: "거북왕",
+                    emoji: "🐢",
+                    reason: "명확한 틀을 지닌 거북왕이 유연한 메타몽에게 정돈된 방향성과 안정감을 선사합니다."
+                }
+            },
+            "ISTP": {
+                name: "루카리오",
+                emoji: "🐺",
+                desc: "만능 재주꾼",
+                reason: "상황 판단력이 뛰어나고 침착하게 문제를 해결하는 루카리오는 ISTP의 도도한 매력입니다. 필요한 때에 장인처럼 날카롭고 유능하게 능력을 발휘하는 실전파입니다.",
+                chemistry: {
+                    mbti: "ESFJ",
+                    pokemon: "토게피",
+                    emoji: "🐣",
+                    reason: "다정다감한 토게피가 쿨하고 다소 무뚝뚝할 수 있는 루카리오의 마음을 사르르 녹여줍니다."
+                }
+            },
+            "INTP": {
+                name: "후딘",
+                emoji: "🧠",
+                desc: "아이디어가 넘치는 아이디어상",
+                reason: "놀라운 지능과 깊은 사색을 즐기는 후딘은 INTP의 전형입니다. 비논리적인 것을 배척하고 호기심 어린 눈으로 세상을 분석하여 독창적인 원리를 찾아냅니다.",
+                chemistry: {
+                    mbti: "ENTJ",
+                    pokemon: "리자몽",
+                    emoji: "🔥",
+                    reason: "강한 추진력을 가진 리자몽이 후딘의 우수한 논리와 아이디어를 실천으로 옮겨줍니다."
+                }
+            },
+            "ESTP": {
+                name: "윈디",
+                emoji: "🦁",
+                desc: "수완 좋은 모험가",
+                reason: "거침없는 속도감과 당찬 에너지를 지닌 윈디는 ESTP의 순발력을 연상시킵니다. 망설임 없이 현장에 몸을 던지는 담대함과 뛰어난 문제 해결 능력을 지녔습니다.",
+                chemistry: {
+                    mbti: "ISFJ",
+                    pokemon: "해피너스",
+                    emoji: "🥚",
+                    reason: "세심하고 따뜻한 해피너스가 거침없이 달려나가는 윈디를 세심하게 보살펴주며 다독여줍니다."
+                }
+            }
+        };
+
+        // 페이지 로드 시 MBTI 버튼 동적 생성
+        window.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('mbti-grid');
+            
+            Object.keys(mbtiData).forEach(mbti => {
+                const btn = document.createElement('button');
+                btn.className = 'mbti-btn';
+                btn.setAttribute('aria-label', `${mbti} 선택하기`);
+                btn.onclick = () => selectMBTI(mbti);
+
+                btn.innerHTML = `
+                    <span class="mbti-title">${mbti}</span>
+                    <span class="mbti-desc">${mbtiData[mbti].desc}</span>
+                `;
+
+                grid.appendChild(btn);
+            });
+        });
+
+        // MBTI 선택 시 결과 화면 출력
+        function selectMBTI(mbti) {
+            const data = mbtiData[mbti];
+            if (!data) return;
+
+            // 내용 채우기
+            document.getElementById('result-badge').innerText = `${mbti} - ${data.desc}`;
+            document.getElementById('pokemon-emoji').innerText = data.emoji;
+            document.getElementById('pokemon-name').innerText = data.name;
+            document.getElementById('pokemon-reason').innerText = data.reason;
+
+            // 궁합 채우기
+            document.getElementById('chem-emoji').innerText = data.chemistry.emoji;
+            document.getElementById('chem-text').innerHTML = `<strong>${data.chemistry.mbti} (${data.chemistry.pokemon})</strong> : ${data.chemistry.reason}`;
+
+            // 화면 전환 애니메이션
+            const selectionScreen = document.getElementById('selection-screen');
+            const resultScreen = document.getElementById('result-screen');
+
+            selectionScreen.classList.remove('active');
+            
+            setTimeout(() => {
+                resultScreen.classList.add('active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 200);
+        }
+
+        // 다시 고르기 (선택 화면으로 리셋)
+        function resetToSelection() {
+            const selectionScreen = document.getElementById('selection-screen');
+            const resultScreen = document.getElementById('result-screen');
+
+            resultScreen.classList.remove('active');
+
+            setTimeout(() => {
+                selectionScreen.classList.add('active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 200);
+        }
+    </script>
+</body>
+</html>
